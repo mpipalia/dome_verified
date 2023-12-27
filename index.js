@@ -10,7 +10,7 @@ import {stripIndent} from 'proper-tags';
 
 const config = {
     btrfsRoot: '/mnt/btrfs',
-    packages: ['base', 'linux', 'linux-firmware', 'git', 'nodejs', 'pnpm', 'arch-install-scripts', 'helix', 'btrfs-progs',],
+    packages: ['base', 'linux', 'linux-firmware', 'efibootmgr', 'git', 'nodejs', 'pnpm', 'arch-install-scripts', 'helix', 'btrfs-progs',],
     ipLink: 'enp5s0',
     hostname: 'archy2',
     pacstrap: {
