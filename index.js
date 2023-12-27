@@ -77,6 +77,7 @@ if (!process.argv.some(a => a === '--chroot')) {
     console.log('chrooting');
     await $`arch-chroot ${newPath} node /root/untouch/index.js --chroot`
     console.log('done chrooting');
+    await $`umount ${path.join(newPath, 'boot')}`;
     await $`umount ${path.join(newPath, 'root/untouch')}`;
     await $`umount ${newPath}`;
 }
