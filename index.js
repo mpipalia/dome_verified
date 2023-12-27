@@ -82,6 +82,7 @@ else {
     await $`locale-gen`;
     await $`systemctl enable systemd-networkd`;
     await $`systemctl enable systemd-resolved`;
+    await $`mkinitcpio -P`;
 }
 
 async function replace(file, replaces) {
