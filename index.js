@@ -71,6 +71,8 @@ if (!process.argv.some(a => a === '--chroot')) {
     ]);
 
     await $`mount --bind ${newPath} ${newPath}`;
+    await fs.rm(path.join(newPath, 'boot'), { recursive: true });
+    await $`mount --bind --mkdir /boot ${path.join(newPath, 'boot')}`;
     await $`mount --bind --mkdir ${process.cwd()} ${path.join(newPath, 'root/untouch')}`;
     console.log('chrooting');
     await $`arch-chroot ${newPath} node /root/untouch/index.js --chroot`
