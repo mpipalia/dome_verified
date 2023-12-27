@@ -10,9 +10,12 @@ import {stripIndent} from 'proper-tags';
 
 const config = {
     btrfsRoot: '/mnt/btrfs',
-    packages: ['base', 'linux', 'linux-firmware', 'nodejs', 'pnpm', 'arch-install-scripts', 'helix', 'btrfs-progs',],
+    packages: ['base', 'linux', 'linux-firmware', 'git', 'nodejs', 'pnpm', 'arch-install-scripts', 'helix', 'btrfs-progs',],
     ipLink: 'enp5s0',
     hostname: 'archy2',
+    pacstrap: {
+        hostPackageCache: true,
+    },
     // password is 'helloworld'
     rootPass: '$y$j9T$ofhPpU.eUZDOpBz.qevxI0$4jlFGtOTNf6jdCEunbyQdb2gMW/uXjjEySt0XgaUIZ/',
 }
@@ -23,7 +26,8 @@ if (!process.argv.some(a => a === '--chroot')) {
 
     if (!process.argv.some(a => a === '--nopacstrap'))
     {
-        await $`pacstrap ${newPath} ${config.packages}`;
+        const hostPackageCache = config.pacstrap.hostPackageCache ? '-c' : '';
+        await $`pacstrap ${hostPackageCache} ${newPath} ${config.packages}`;
     }
 
     await fs.rm(path.join(newPath, 'etc/resolv.conf'));
