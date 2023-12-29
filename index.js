@@ -23,6 +23,7 @@ const config = {
     // password is 'helloworld'
     rootPass: '$y$j9T$ofhPpU.eUZDOpBz.qevxI0$4jlFGtOTNf6jdCEunbyQdb2gMW/uXjjEySt0XgaUIZ/',
 }
+const btrfsUuid = 'fa906a4d-cfad-48c1-830f-249b00310164';
 const globalConf = {
     disk: new Btrfs({create: true, deleteExisting: true, root: '/mnt/btrfs'}),
     root: '/mnt/btrfs/roots/new',
@@ -31,7 +32,11 @@ const globalConf = {
     modules: [
         new SystemdResolved({mode: SystemdResolved.Mode.DIRECT}),
         new Fstab([
-            {uuid: ''}
+            {uuid: btrfsUuid, mount: '/', type: 'btrfs', options: 'rw,noatime,compress=zstd,subvol=/roots/active'},
+            {uuid: btrfsUuid, mount: '/mnt/btrfs', type: 'btrfs', options: 'rw,noatime,compress=zstd,subvol=/'},
+            {uuid: 'DE03-CB9A', mount: '/boot', type: 'vfat', options: 'rw,noatime,errors=remount-ro', fsck: 2},
+            // swap
+            {uuid: '55623361-cd1c-4908-9328-afdc36271e3f', mount: 'none', type: 'swap', options: 'defaults'},
         ])
     ],
 }
@@ -62,12 +67,13 @@ async function doit() {
             if (typeof mod.preChroot === 'function') {
                 const awaitable = mod.preChroot(globalConf);
                 if (awaitable && typeof awaitable.then === 'function') {
+
                     await awaitable;
                 }
             }
         }
 
-        await fs.writeFile(path.join(newPath, 'etc/fstab'), stripIndent`
+        /*await fs.writeFile(path.join(newPath, 'etc/fstab'), stripIndent`
             # Static information about the filesystems.
             # See fstab(5) for details.
 
@@ -78,7 +84,7 @@ async function doit() {
 
             # /dev/vda1
             UUID=40F6-BA42                              /boot       vfat    rw,noatime,errors=remount-ro                    0 2
-        `);
+        `);*/
 
         const localeGen = [
             {search: '#en_US.UTF-8 UTF-8', replace: 'en_US.UTF-8 UTF-8'},

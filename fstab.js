@@ -14,6 +14,15 @@ export default class Fstab {
         info('Creating /etc/fstab');
         const { root } = globalConf;
 
+        const maxBlock = Math.max(...this.#config.map(
+            c => c.block?.length ?? c.label?.length ?? c.uuid?.length ?? c.partLabel?.length ?? c.partUuid?.length)) +
+            'PARTLABEL='.length; // the biggest prefix
+        const maxMount = Math.max(...this.#config.map(c => c.mount.length));
+        const maxType = Math.max(...this.#config.map(c => c.type.length));
+        const maxOptions = Math.max(...this.#config.map(c => c.options.length));
+        debug(`block: ${maxBlock}; mount: ${maxMount}; type: ${maxType}; options: ${maxOptions}`);
+        //throw new Error("debugging");
+
         const file = await fs.open(path.join(root, 'etc/fstab'), 'w');
         for (let part of this.#config) {
             let block = part.block;
@@ -30,9 +39,10 @@ export default class Fstab {
                 throw new Error(`No block/label/uuid provided for this mount point: ${part.mount}`);
             }
 
+            verbose(`Adding block device ${block} to mount point ${part.mount} (${part.type})`);
             const dump = part.dump ?? '0';
             const fsck = part.fsck ?? '0';
-            await file.write(`${block} ${part.mount} ${part.type} ${part.options} ${dump} ${fsck}`);
+            await file.write(`${block.padEnd(maxBlock)} ${part.mount.padEnd(maxMount)} ${part.type.padEnd(maxType)} ${part.options.padEnd(maxOptions)} ${dump} ${fsck}${os.EOL}`);
         }
         await file.close();
     }
