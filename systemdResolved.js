@@ -1,6 +1,8 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
+import {$} from 'execa';
+
 import {debug, verbose, info, error} from './logger.js';
 
 export default class SystemdResolved {
@@ -26,6 +28,11 @@ export default class SystemdResolved {
                 await fs.symlink('../run/systemd/resolve/resolv.conf', path.join(root, 'etc/resolv.conf'));
             }
         }
+    }
+
+    async postChroot(globalConf) {
+        info('Enabling systemd-resolved');
+        await $`systemctl enable systemd-resolved`;
     }
 
     static Mode = Object.freeze({

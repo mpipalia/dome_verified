@@ -8,9 +8,11 @@ import process from 'node:process';
 import {$} from 'execa';
 import {stripIndent} from 'proper-tags';
 
+import {debug, verbose, info, error} from './logger.js';
 import Btrfs from './btrfs.js';
 import SystemdResolved from './systemdResolved.js';
 import Fstab from './fstab.js';
+import Locale from './locale.js';
 
 const config = {
     root: '/mnt/btrfs/roots/new',
@@ -28,7 +30,8 @@ const globalConf = {
     disk: new Btrfs({create: true, deleteExisting: true, root: '/mnt/btrfs'}),
     root: '/mnt/btrfs/roots/new',
     basePackages: ['base', 'linux', 'linux-firmware', 'arch-install-scripts'],
-    extraPackages: ['man-db', 'man-pages', 'git', 'helix', 'nodejs', 'pnpm', 'zellij'],
+    //extraPackages: ['man-db', 'man-pages', 'git', 'helix', 'nodejs', 'pnpm', 'zellij'],
+    extraPackages: ['nodejs'],
     modules: [
         new SystemdResolved({mode: SystemdResolved.Mode.DIRECT}),
         new Fstab([
@@ -37,7 +40,8 @@ const globalConf = {
             {uuid: 'DE03-CB9A', mount: '/boot', type: 'vfat', options: 'rw,noatime,errors=remount-ro', fsck: 2},
             // swap
             {uuid: '55623361-cd1c-4908-9328-afdc36271e3f', mount: 'none', type: 'swap', options: 'defaults'},
-        ])
+        ]),
+        new Locale(['en_US.UTF-8 UTF-8']),
     ],
 }
 
@@ -86,12 +90,12 @@ async function doit() {
             UUID=40F6-BA42                              /boot       vfat    rw,noatime,errors=remount-ro                    0 2
         `);*/
 
-        const localeGen = [
+        /*const localeGen = [
             {search: '#en_US.UTF-8 UTF-8', replace: 'en_US.UTF-8 UTF-8'},
         ];
         await replace(path.join(newPath, 'etc/locale.gen'), localeGen);
 
-        await fs.writeFile(path.join(newPath, 'etc/locale.conf'), 'LANG=en_US.UTF-8\n');
+        await fs.writeFile(path.join(newPath, 'etc/locale.conf'), 'LANG=en_US.UTF-8\n');*/
 
         await dhcp(config.ipLink);
 
@@ -114,17 +118,27 @@ async function doit() {
         await fs.rm(path.join(newPath, 'boot'), { recursive: true });
         await $`mount --bind --mkdir /boot ${path.join(newPath, 'boot')}`;
         await $`mount --bind --mkdir ${process.cwd()} ${path.join(newPath, 'root/untouch')}`;
-        console.log('chrooting');
-        await $`arch-chroot ${newPath} node /root/untouch/index.js --chroot`
-        console.log('done chrooting');
+        info('chrooting');
+        await $({stdio: 'inherit'})`arch-chroot ${newPath} node /root/untouch/index.js --chroot`
+        info('done chrooting');
         await $`umount ${path.join(newPath, 'boot')}`;
         await $`umount ${path.join(newPath, 'root/untouch')}`;
         await $`umount ${newPath}`;
     }
     else {
-        await $`locale-gen`;
+        for (let mod of globalConf.modules) {
+            if (typeof mod.postChroot === 'function') {
+                const awaitable = mod.postChroot(globalConf);
+                if (awaitable && typeof awaitable.then === 'function') {
+
+                    await awaitable;
+                }
+            }
+        }
+
+        //await $`locale-gen`;
         await $`systemctl enable systemd-networkd`;
-        await $`systemctl enable systemd-resolved`;
+        //await $`systemctl enable systemd-resolved`;
         await $`mkinitcpio -P`;
     }
 }

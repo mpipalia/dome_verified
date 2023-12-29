@@ -4,8 +4,31 @@ import path from 'node:path';
 
 import {debug, verbose, info, error} from './logger.js';
 
+/**
+ * @typedef {Object} Config
+ * @property {string} [block] The block device to mount. Either this or label or uuid is required.
+ * @property {string} [label] The filesystem label
+ * @property {string} [uuid] The filesystem UUID
+ * @property {string} [partLabel] The partition label
+ * @property {string} [partUuid] Thee partition UUID
+ * @prop {string} mount The mount point
+ * @prop {string} type The type of the filesystem
+ * @prop {string} [options] additional mount options
+ * @prop {number} [dump] Whether to dump this filesystem
+ * @prop {number} [fsck] Whether and what order to fsck this filesystem
+ */
+
 export default class Fstab {
+    /**
+     * Configuration, containing array of mount information.
+     * @type {Config[]}
+     */
     #config;
+
+    /**
+     * 
+     * @param {Config[]} config array of all mount points
+     */
     constructor(config) {
         this.#config = config;
     }
@@ -15,13 +38,12 @@ export default class Fstab {
         const { root } = globalConf;
 
         const maxBlock = Math.max(...this.#config.map(
-            c => c.block?.length ?? c.label?.length ?? c.uuid?.length ?? c.partLabel?.length ?? c.partUuid?.length)) +
+            c => c.block?.length ?? c.label?.length ?? c.uuid?.length ?? c.partLabel?.length ?? c.partUuid?.length ?? 0)) +
             'PARTLABEL='.length; // the biggest prefix
         const maxMount = Math.max(...this.#config.map(c => c.mount.length));
         const maxType = Math.max(...this.#config.map(c => c.type.length));
         const maxOptions = Math.max(...this.#config.map(c => c.options.length));
-        debug(`block: ${maxBlock}; mount: ${maxMount}; type: ${maxType}; options: ${maxOptions}`);
-        //throw new Error("debugging");
+        debug(`padding - block: ${maxBlock}; mount: ${maxMount}; type: ${maxType}; options: ${maxOptions}`);
 
         const file = await fs.open(path.join(root, 'etc/fstab'), 'w');
         for (let part of this.#config) {
@@ -40,9 +62,10 @@ export default class Fstab {
             }
 
             verbose(`Adding block device ${block} to mount point ${part.mount} (${part.type})`);
-            const dump = part.dump ?? '0';
-            const fsck = part.fsck ?? '0';
-            await file.write(`${block.padEnd(maxBlock)} ${part.mount.padEnd(maxMount)} ${part.type.padEnd(maxType)} ${part.options.padEnd(maxOptions)} ${dump} ${fsck}${os.EOL}`);
+            const options = part.options ?? '';
+            const dump = part.dump ?? 0;
+            const fsck = part.fsck ?? 0;
+            await file.write(`${block.padEnd(maxBlock)} ${part.mount.padEnd(maxMount)} ${part.type.padEnd(maxType)} ${options.padEnd(maxOptions)} ${dump} ${fsck}${os.EOL}`);
         }
         await file.close();
     }
