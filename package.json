@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "execa": "^8.0.1",
-    "proper-tags": "^2.0.2"
+    "proper-tags": "^2.0.2",
+    "winston": "^3.11.0"
   }
 }
