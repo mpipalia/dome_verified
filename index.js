@@ -10,6 +10,7 @@ import {stripIndent} from 'proper-tags';
 
 import {debug, verbose, info, error} from './logger.js';
 import Btrfs from './btrfs.js';
+import SystemdNetworkd from './systemdNetworkd.js';
 import SystemdResolved from './systemdResolved.js';
 import Fstab from './fstab.js';
 import Locale from './locale.js';
@@ -42,6 +43,14 @@ const globalConf = {
             {uuid: '55623361-cd1c-4908-9328-afdc36271e3f', mount: 'none', type: 'swap', options: 'defaults'},
         ]),
         new Locale(['en_US.UTF-8 UTF-8']),
+        new SystemdNetworkd([
+            {
+                filename: '20-enp5s0',
+                Match: { Name: 'enp5s0' },
+                Network: { DHCP: 'yes' },
+                DHCPv4: { UseDomains: 'yes' },
+            },
+        ]),
     ],
 }
 
@@ -97,7 +106,7 @@ async function doit() {
 
         await fs.writeFile(path.join(newPath, 'etc/locale.conf'), 'LANG=en_US.UTF-8\n');*/
 
-        await dhcp(config.ipLink);
+        //await dhcp(config.ipLink);
 
         await fs.writeFile(path.join(newPath, 'etc/hostname'), config.hostname + '\n');
 
