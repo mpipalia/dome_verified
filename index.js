@@ -10,6 +10,7 @@ import {stripIndent} from 'proper-tags';
 
 import {debug, verbose, info, error} from './logger.js';
 import Btrfs from './btrfs.js';
+import Machine from './machine.js';
 import SystemdNetworkd from './systemdNetworkd.js';
 import SystemdResolved from './systemdResolved.js';
 import Fstab from './fstab.js';
@@ -34,6 +35,7 @@ const globalConf = {
     //extraPackages: ['man-db', 'man-pages', 'git', 'helix', 'nodejs', 'pnpm', 'zellij'],
     extraPackages: ['nodejs'],
     modules: [
+        new Machine({machineId: 'd792158c4ab86429bce1d84344bd3165', hostname: 'archy2'}),
         new SystemdResolved({mode: SystemdResolved.Mode.DIRECT}),
         new Fstab([
             {uuid: btrfsUuid, mount: '/', type: 'btrfs', options: 'rw,noatime,compress=zstd,subvol=/roots/active'},
@@ -57,6 +59,15 @@ const globalConf = {
 const newPath = config.root;
 
 async function doit() {
+    if (process.argv.some(a => a === '--machineid')) {
+        let id = Math.floor(2**32 * Math.random()).toString(16).padStart(8, '0');
+        id += Math.floor(2**32 * Math.random()).toString(16).padStart(8, '0');
+        id += Math.floor(2**32 * Math.random()).toString(16).padStart(8, '0');
+        id += Math.floor(2**32 * Math.random()).toString(16).padStart(8, '0');
+        console.log(id);
+        return;
+    }
+
     if (!process.argv.some(a => a === '--chroot')) {
         //await $`btrfs subvolume create ${newPath}`;
         await globalConf.disk.setupDisk(globalConf);
@@ -108,7 +119,7 @@ async function doit() {
 
         //await dhcp(config.ipLink);
 
-        await fs.writeFile(path.join(newPath, 'etc/hostname'), config.hostname + '\n');
+        //await fs.writeFile(path.join(newPath, 'etc/hostname'), config.hostname + '\n');
 
         await replace(path.join(newPath, 'etc/shadow'), [
             {search: /^root:[^:]*:/m, replace: `root:${config.rootPass}:`},
@@ -146,7 +157,7 @@ async function doit() {
         }
 
         //await $`locale-gen`;
-        await $`systemctl enable systemd-networkd`;
+        //await $`systemctl enable systemd-networkd`;
         //await $`systemctl enable systemd-resolved`;
         await $`mkinitcpio -P`;
     }
